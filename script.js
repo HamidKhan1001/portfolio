@@ -50,6 +50,9 @@
   if (!window.gsap || !window.ScrollTrigger) return; // page stays fully usable without motion
 
   gsap.registerPlugin(ScrollTrigger, window.Draggable);
+  // mobile URL bar showing/hiding fires resize constantly; don't recompute every time
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
   /* ---------- smooth scroll (Lenis) ---------- */
   if (window.Lenis && !reduce) {
@@ -78,6 +81,26 @@
     }
   });
 
+  /* ---------- contribution-graph decoration ---------- */
+  const heat = $('#heat');
+  if (heat) {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    heat.innerHTML = Array.from({ length: 26 * 7 }, (_, i) => {
+      const col = Math.floor(i / 7), r = rnd();
+      const boost = col / 26; // trends upward, like a streak building
+      const l = r < 0.28 - boost * 0.2 ? 0 : Math.min(4, 1 + Math.floor((r + boost * 0.5) * 4));
+      return `<span data-l="${l}"></span>`;
+    }).join('');
+    const cells = $$('span', heat);
+    const paint = () => cells.forEach(s => (s.className = 'l' + s.dataset.l));
+    if (reduce) paint();
+    else ScrollTrigger.create({
+      trigger: heat, start: 'top 90%', once: true,
+      onEnter: () => cells.forEach((s, i) => setTimeout(() => (s.className = 'l' + s.dataset.l), (Math.floor(i / 7) * 40)))
+    });
+  }
+
   if (reduce) return;
 
   /* ---------- hero intro ---------- */
@@ -89,7 +112,7 @@
   const intro = gsap.timeline({ defaults: { ease: 'power4.out' } });
   intro
     .from('.hero h1 .lt', { yPercent: 115, rotate: 6, duration: 1.3, stagger: 0.045, delay: 0.2 })
-    .from('.shape', { scale: 0, opacity: 0, rotate: -60, duration: 1.4, stagger: 0.15, ease: 'elastic.out(1,.6)' }, 0.9)
+    .from('.shape, .cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -60, duration: 1.4, stagger: 0.15, ease: 'elastic.out(1,.6)' }, 0.9)
     .from('.copy, .since', { y: 30, opacity: 0, duration: 1, stagger: 0.1 }, 1.1)
     .from('.nav', { y: -30, opacity: 0, duration: 1, clearProps: 'transform,opacity' }, 0.6);
 
@@ -108,7 +131,7 @@
   });
 
   // draggable stickers
-  if (window.Draggable) {
+  if (window.Draggable && fine) {
     gsap.set('.bolt', { rotation: 8 });
     Draggable.create('.shape', {
       type: 'x,y', bounds: '.hb',
@@ -132,18 +155,20 @@
       .fromTo(tilt, { rotateY: 0, rotateZ: 0 }, { rotateY: 34, rotateZ: -5, duration: 0.5, ease: 'sine.out' })
       .to(tilt, { rotateY: 0, rotateZ: 0, duration: 0.5, ease: 'sine.inOut' });
   });
-  // mobile: no scroll animation — one small portrait that sits in the hero and scrolls away with it
+  // mobile: layout is pure CSS (portrait sits under the title). Scroll adds a light tilt-and-lift,
+  // transform-only and scrubbed, with no innerHeight maths to go stale when the URL bar moves.
   mm.add('(max-width: 809px)', () => {
-    const place = () => gsap.set(move, { scale: 0.5, y: () => innerHeight / 2 - move.offsetHeight * 0.25 - 36 });
-    place();
-    addEventListener('resize', place);
-    return () => removeEventListener('resize', place);
+    gsap.fromTo(tilt, { rotateY: 0, rotateZ: -3 },
+      { rotateY: 28, rotateZ: 3, ease: 'none',
+        scrollTrigger: { trigger: '#hb', start: 'top top', end: '+=70%', scrub: 0.5 } });
+    gsap.to('.hero-title', { yPercent: -12, opacity: 0.2, ease: 'none',
+      scrollTrigger: { trigger: '#hb', start: 'top top', end: '+=70%', scrub: true } });
   });
 
   /* ---------- generic reveals ---------- */
-  gsap.utils.toArray('.reveal-up, .row, .pcard, .orow, .stat, .stack > div').forEach(el => {
+  gsap.utils.toArray('.reveal-up, .row, .pcard, .orow, .stat, .stack > div' + (fine ? '' : ', .flip')).forEach(el => {
     gsap.from(el, {
-      y: 56, opacity: 0, duration: 1.1, ease: 'power3.out',
+      y: fine ? 56 : 28, opacity: 0, duration: fine ? 1.1 : 0.8, ease: 'power3.out',
       scrollTrigger: { trigger: el, start: 'top 88%', once: true }
     });
   });
@@ -168,7 +193,7 @@
   });
 
   /* ---------- projects: parallax + mouse tilt ---------- */
-  $$('.pcard').forEach(card => {
+  if (fine) $$('.pcard').forEach(card => {
     const inner = $('.pin', card);
     gsap.fromTo(inner, { yPercent: -5 }, {
       yPercent: 5, ease: 'none',
@@ -188,11 +213,13 @@
 
   /* ---------- community: 3D flip cards ---------- */
   const flips = $$('.flip');
-  gsap.set(flips, { rotateY: 180 });
-  gsap.to(flips, {
-    rotateY: 0, duration: 1.5, stagger: 0.16, ease: 'power3.out',
-    scrollTrigger: { trigger: '.flips', start: 'top 78%', once: true }
-  });
+  if (fine) {
+    gsap.set(flips, { rotateY: 180 });
+    gsap.to(flips, {
+      rotateY: 0, duration: 1.5, stagger: 0.16, ease: 'power3.out',
+      scrollTrigger: { trigger: '.flips', start: 'top 78%', once: true }
+    });
+  } // touch: cards just fade up with the generic reveals, tap to flip
   const canHover = matchMedia('(hover: hover)').matches;
   flips.forEach(f => {
     let on = false;
