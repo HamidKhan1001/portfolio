@@ -81,26 +81,6 @@
     }
   });
 
-  /* ---------- contribution-graph decoration ---------- */
-  const heat = $('#heat');
-  if (heat) {
-    let seed = 7;
-    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    heat.innerHTML = Array.from({ length: 26 * 7 }, (_, i) => {
-      const col = Math.floor(i / 7), r = rnd();
-      const boost = col / 26; // trends upward, like a streak building
-      const l = r < 0.28 - boost * 0.2 ? 0 : Math.min(4, 1 + Math.floor((r + boost * 0.5) * 4));
-      return `<span data-l="${l}"></span>`;
-    }).join('');
-    const cells = $$('span', heat);
-    const paint = () => cells.forEach(s => (s.className = 'l' + s.dataset.l));
-    if (reduce) paint();
-    else ScrollTrigger.create({
-      trigger: heat, start: 'top 90%', once: true,
-      onEnter: () => cells.forEach((s, i) => setTimeout(() => (s.className = 'l' + s.dataset.l), (Math.floor(i / 7) * 40)))
-    });
-  }
-
   if (reduce) return;
 
   /* ---------- hero intro ---------- */
