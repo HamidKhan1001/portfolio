@@ -229,6 +229,48 @@ section.opensource{padding:clamp(70px,9vw,130px) var(--pad);max-width:calc(var(-
 .bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #faf7f31a;padding-top:20px;font-size:15px;color:#faf7f399}
 .bottom a:hover{color:var(--accent)}
 
+/* theme toggle */
+.nav-right{display:flex;align-items:center;gap:8px}
+.theme-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid #8885;background:transparent;color:var(--bg);display:grid;place-items:center;cursor:pointer;transition:background .3s,transform .4s var(--ease)}
+.theme-btn:hover{background:#8883;transform:rotate(18deg)}
+:root[data-theme=dark] .i-moon,:root[data-theme=light] .i-sun{display:none}
+:root[data-theme=dark] .shape{filter:invert(1) drop-shadow(0 12px 14px #0008)}
+:root[data-theme=dark] .grain{opacity:.07}
+
+/* ---------- GitHub Campus Expert ---------- */
+.cx-pill{position:absolute;left:50%;top:calc(100% + 18px);transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font-size:clamp(12px,1.3vw,16px);font-weight:600;letter-spacing:.02em;padding:7px 15px 7px 12px;border-radius:999px;border:1.5px solid var(--line);background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.cx-sticker{width:clamp(92px,9vw,128px);aspect-ratio:1;flex:none;display:block;position:relative;z-index:4;transition:transform .5s var(--ease)}
+.cx-sticker:hover{transform:rotate(-12deg) scale(1.06)}
+.cx-sticker svg{width:100%;height:100%;overflow:visible}
+.cx-bg{fill:var(--gh-purple)}
+.cx-sticker text{font:700 10.4px var(--font);letter-spacing:.14em;fill:#fff}
+.cx-spin{transform-origin:60px 60px;animation:spin 18s linear infinite}
+.cx-core rect{fill:#111}
+.cx-core path{stroke:#fff}
+.hero-foot{align-items:flex-end}
+.hero-foot .since{margin-left:auto;margin-right:24px}
+
+.marquee{overflow:hidden;border-block:1px solid var(--line);padding:16px 0;background:var(--card);color:var(--on-card);transform:rotate(-1.2deg);margin:40px -2vw 0}
+.mq-track{display:flex;width:max-content;align-items:center;gap:28px;animation:mq 34s linear infinite;padding-right:28px}
+.marquee span{font-size:clamp(20px,3vw,34px);font-weight:700;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap}
+.marquee i{font-style:normal;opacity:.4;font-size:clamp(16px,2vw,24px)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+section.campus{padding:clamp(70px,9vw,130px) var(--pad);max-width:calc(var(--max) + var(--pad)*2);margin:0 auto}
+.cx-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(20px,3vw,40px);align-items:stretch}
+.cx-term{background:var(--card);color:var(--on-card);border-radius:20px;overflow:hidden}
+.term-bar{padding:14px 22px;border-bottom:1px solid #faf7f326;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
+.cx-term dl{padding:6px 22px 14px}
+.cx-term dl div{display:grid;grid-template-columns:90px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid #faf7f31a}
+.cx-term dl div:last-child{border:0}
+.cx-term dt{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gh-purple)}
+.cx-term dd{font-size:clamp(16px,1.5vw,19px);font-weight:500;line-height:1.3}
+.cx-side{display:flex;align-items:center}
+.cx-side>p{font-size:clamp(18px,1.9vw,26px);line-height:1.25;font-weight:600;letter-spacing:-.03em}
+.flip:first-child{grid-column:1/-1}
+.flip:first-child .fc-back::before{background:radial-gradient(circle at 50% 30%,#8957e588,transparent 60%)}
+.flip:first-child .glyph,.flip:first-child .date{color:#b392f0}
+
 /* ---------- responsive ---------- */
 @media (max-width:1000px){
   .stack{grid-template-columns:repeat(2,1fr)}
@@ -275,45 +317,10 @@ section.opensource{padding:clamp(70px,9vw,130px) var(--pad);max-width:calc(var(-
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important}
 }
-
-/* theme toggle */
-.nav-right{display:flex;align-items:center;gap:8px}
-.theme-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid #8885;background:transparent;color:var(--bg);display:grid;place-items:center;cursor:pointer;transition:background .3s,transform .4s var(--ease)}
-.theme-btn:hover{background:#8883;transform:rotate(18deg)}
-:root[data-theme=dark] .i-moon,:root[data-theme=light] .i-sun{display:none}
-:root[data-theme=dark] .shape{filter:invert(1) drop-shadow(0 12px 14px #0008)}
-:root[data-theme=dark] .grain{opacity:.07}
-
-/* ---------- GitHub Campus Expert ---------- */
-.cx-pill{position:absolute;left:50%;top:calc(100% + 18px);transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font-size:clamp(12px,1.3vw,16px);font-weight:600;letter-spacing:.02em;padding:7px 15px 7px 12px;border-radius:999px;border:1.5px solid var(--line);background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.cx-sticker{width:clamp(92px,9vw,128px);aspect-ratio:1;flex:none;display:block;position:relative;z-index:4;transition:transform .5s var(--ease)}
-.cx-sticker:hover{transform:rotate(-12deg) scale(1.06)}
-.cx-sticker svg{width:100%;height:100%;overflow:visible}
-.cx-bg{fill:var(--gh-purple)}
-.cx-sticker text{font:700 10.4px var(--font);letter-spacing:.14em;fill:#fff}
-.cx-spin{transform-origin:60px 60px;animation:spin 18s linear infinite}
-.cx-core rect{fill:#111}
-.cx-core path{stroke:#fff}
-.hero-foot{align-items:flex-end}
-.hero-foot .since{margin-left:auto;margin-right:24px}
-
-.marquee{overflow:hidden;border-block:1px solid var(--line);padding:16px 0;background:var(--card);color:var(--on-card);transform:rotate(-1.2deg);margin:40px -2vw 0}
-.mq-track{display:flex;width:max-content;align-items:center;gap:28px;animation:mq 34s linear infinite;padding-right:28px}
-.marquee span{font-size:clamp(20px,3vw,34px);font-weight:700;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap}
-.marquee i{font-style:normal;opacity:.4;font-size:clamp(16px,2vw,24px)}
-@keyframes mq{to{transform:translateX(-50%)}}
-
-section.campus{padding:clamp(70px,9vw,130px) var(--pad);max-width:calc(var(--max) + var(--pad)*2);margin:0 auto}
-.cx-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(20px,3vw,40px);align-items:stretch}
-.cx-term{background:var(--card);color:var(--on-card);border-radius:20px;overflow:hidden}
-.term-bar{padding:14px 22px;border-bottom:1px solid #faf7f326;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
-.cx-term dl{padding:6px 22px 14px}
-.cx-term dl div{display:grid;grid-template-columns:90px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid #faf7f31a}
-.cx-term dl div:last-child{border:0}
-.cx-term dt{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gh-purple)}
-.cx-term dd{font-size:clamp(16px,1.5vw,19px);font-weight:500;line-height:1.3}
-.cx-side{display:flex;align-items:center}
-.cx-side>p{font-size:clamp(18px,1.9vw,26px);line-height:1.25;font-weight:600;letter-spacing:-.03em}
-.flip:first-child{grid-column:1/-1}
-.flip:first-child .fc-back::before{background:radial-gradient(circle at 50% 30%,#8957e588,transparent 60%)}
-.flip:first-child .glyph,.flip:first-child .date{color:#b392f0}
+@media (max-width:809px){
+  .tags{flex-wrap:wrap}
+  .sec-head{align-items:flex-start}
+  .big-words{font-size:clamp(64px,19vw,300px)}
+  .nav{top:16px}
+  .menu>a{font-size:clamp(40px,12vw,64px)}
+}
