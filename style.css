@@ -263,7 +263,13 @@ section.opensource{padding:clamp(70px,9vw,130px) var(--pad);max-width:calc(var(-
   .olinks a{font-size:14px}
   .cols{grid-template-columns:1fr 1fr}
   .cols h2{grid-column:1/-1}
-  .cx-grid{grid-template-columns:1fr}
+  .cx-grid{grid-template-columns:minmax(0,1fr)}
+  .cx-term,.cx-side{min-width:0}
+  .term-bar{padding:12px 16px}
+  .cx-term dl{padding:4px 16px 10px}
+  .cx-term dl div{grid-template-columns:1fr;gap:6px;padding:14px 0}
+  .cx-term dd{overflow-wrap:anywhere}
+  .cx-side>p{font-size:18px;line-height:1.4}
   .pin{inset:0}
 }
 @media (prefers-reduced-motion:reduce){
