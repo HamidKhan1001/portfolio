@@ -36,16 +36,36 @@
     setTimeout(() => root.classList.remove('theming'), 600);
   });
 
-  /* ---------- mobile menu ---------- */
+  /* ---------- scroll lock, menu, anchors (shared with palette.js via window.site) ---------- */
   const burger = $('#burger'), menu = $('#menu');
   let lenis = null;
+  const lock = on => {
+    if (lenis) on ? lenis.stop() : lenis.start();
+    else document.body.style.overflow = on ? 'hidden' : '';
+  };
   const setMenu = open => {
     burger.setAttribute('aria-expanded', open);
     menu.classList.toggle('open', open);
-    if (lenis) open ? lenis.stop() : lenis.start();
-    else document.body.style.overflow = open ? 'hidden' : '';
+    lock(open);
   };
   burger.addEventListener('click', () => setMenu(burger.getAttribute('aria-expanded') !== 'true'));
+
+  const goTo = id => {
+    let target = id === '#top' ? 0 : $(id);
+    if (target === null) return;
+    // a pinned section lives inside a spacer; scroll to the spacer or the offset is wrong once pinned
+    if (target && target.parentElement && target.parentElement.classList.contains('pin-spacer')) target = target.parentElement;
+    setMenu(false);
+    if (lenis) lenis.scrollTo(target, { offset: target === 0 ? 0 : -10, duration: 1.4 });
+    else (target === 0 ? window.scrollTo({ top: 0 }) : target.scrollIntoView());
+  };
+  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    if (id !== '#top' && !$(id)) return;
+    e.preventDefault();
+    goTo(id);
+  }));
+  window.site = { goTo, lock, toggleTheme: () => tbtn.click(), flip: null };
 
   if (!window.gsap || !window.ScrollTrigger) return; // page stays fully usable without motion
 
@@ -61,25 +81,14 @@
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
   }
-  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
-    const id = a.getAttribute('href');
-    const target = id === '#top' ? 0 : $(id);
-    if (target === null) return;
-    e.preventDefault();
-    setMenu(false);
-    if (lenis) lenis.scrollTo(target, { offset: id === '#top' ? 0 : -10, duration: 1.4 });
-    else (target === 0 ? window.scrollTo({ top: 0 }) : target.scrollIntoView());
-  }));
 
-  /* ---------- scroll progress + nav hide/show ---------- */
-  const bar = $('.progress'), nav = $('#nav');
+  /* ---------- scroll progress ---------- */
+  const bar = $('.progress');
   ScrollTrigger.create({
     start: 0, end: 'max',
-    onUpdate: self => {
-      bar.style.transform = `scaleX(${self.progress})`;
-      const y = self.scroll();
-    }
+    onUpdate: self => { bar.style.transform = `scaleX(${self.progress})`; }
   });
+  document.fonts && document.fonts.ready.then(() => ScrollTrigger.refresh());
 
   if (reduce) return;
 
@@ -89,7 +98,8 @@
     w.setAttribute('aria-hidden', 'true');
     w.innerHTML = [...t].map(c => `<span class="lt" style="display:inline-block">${c}</span>`).join('');
   });
-  const intro = gsap.timeline({ defaults: { ease: 'power4.out' } });
+  let heroReady = false;
+  const intro = gsap.timeline({ defaults: { ease: 'power4.out' }, onComplete: () => (heroReady = true) });
   intro
     .from('.hero h1 .lt', { yPercent: 115, rotate: 6, duration: 1.3, stagger: 0.045, delay: 0.2 })
     .from('.shape, .cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -60, duration: 1.4, stagger: 0.15, ease: 'elastic.out(1,.6)' }, 0.9)
@@ -104,11 +114,13 @@
 
   // click / tap to flip the portrait
   let flipped = false;
-  avatar.addEventListener('click', () => {
+  const flipPortrait = () => {
     if (!introDone) return;
     flipped = !flipped;
     gsap.to(avatar, { rotateY: flipped ? 180 : 0, duration: 1.1, ease: 'power3.inOut' });
-  });
+  };
+  avatar.addEventListener('click', flipPortrait);
+  window.site.flip = flipPortrait;
 
   // draggable stickers
   if (window.Draggable && fine) {
@@ -118,6 +130,66 @@
       onPress() { gsap.to(this.target, { scale: 1.12, duration: 0.3 }); },
       onRelease() { gsap.to(this.target, { scale: 1, duration: 0.8, ease: 'elastic.out(1,.5)' }); },
       onDrag() { gsap.to(this.target, { rotation: '+=' + this.deltaX * 0.4, duration: 0.2, overwrite: 'auto' }); }
+    });
+  }
+
+  /* ---------- kinetic type: Archivo's width + weight axes swell toward the cursor ---------- */
+  const kinetic = (letters, o) => {
+    const n = letters.length, cur = new Array(n).fill(0), last = new Array(n).fill(-1), rects = new Array(n);
+    let px = 0, py = 0, on = false;
+    addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; on = true; }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => (on = false));
+    gsap.ticker.add(() => {
+      if (!o.visible()) return;
+      const settled = cur.every(v => v < 0.002);
+      if (!on && settled) return;
+      const R = o.radius();
+      for (let i = 0; i < n; i++) rects[i] = letters[i].getBoundingClientRect(); // all reads, then all writes
+      for (let i = 0; i < n; i++) {
+        const r = rects[i], dx = r.left + r.width / 2 - px, dy = r.top + r.height / 2 - py;
+        const t = on ? Math.exp(-(dx * dx + dy * dy) / (R * R)) : 0;
+        cur[i] += (t - cur[i]) * 0.12;
+        const v = Math.round(cur[i] * 250) / 250;
+        if (v !== last[i]) {
+          last[i] = v;
+          letters[i].style.fontVariationSettings =
+            `"wdth" ${(o.w0 + (o.w1 - o.w0) * v).toFixed(1)}, "wght" ${Math.round(o.g0 + (o.g1 - o.g0) * v)}`;
+        }
+      }
+    });
+  };
+  if (fine) {
+    kinetic($$('.hero h1 .lt'), {
+      w0: 100, w1: 125, g0: 700, g1: 900,
+      radius: () => Math.max(170, innerWidth * 0.15),
+      visible: () => heroReady && scrollY < innerHeight * 1.3
+    });
+    const giant = $('.giant');
+    giant.innerHTML = [...giant.textContent].map(c =>
+      c === ' ' ? '<span style="display:inline-block;width:.3em"></span>' : `<span style="display:inline-block">${c}</span>`).join('');
+    let giantOn = false;
+    new IntersectionObserver(([e]) => (giantOn = e.isIntersecting), { rootMargin: '80px' }).observe(giant);
+    kinetic($$('span', giant).filter(s => s.textContent.trim()), {
+      w0: 90, w1: 112, g0: 800, g1: 900,
+      radius: () => Math.max(150, innerWidth * 0.11),
+      visible: () => giantOn
+    });
+  }
+
+  /* ---------- marquee: drifts on its own, speeds up and reverses with scroll ---------- */
+  const track = $('.mq-track');
+  if (track) {
+    track.style.animation = 'none';
+    let x = 0, dir = -1, boost = 0;
+    gsap.ticker.add((_t, dt) => {
+      const v = lenis ? lenis.velocity : 0;
+      boost += (Math.min(Math.abs(v), 40) - boost) * 0.08;
+      if (Math.abs(v) > 0.4) dir += ((v < 0 ? 1 : -1) - dir) * 0.1;
+      else dir += (-1 - dir) * 0.02;
+      x += dir * (1.47 + boost * 0.35) * (dt / 1000);
+      if (x <= -50) x += 50;
+      if (x > 0) x -= 50;
+      track.style.transform = `translate3d(${x.toFixed(3)}%,0,0)`;
     });
   }
 
@@ -146,7 +218,7 @@
   });
 
   /* ---------- generic reveals ---------- */
-  gsap.utils.toArray('.reveal-up, .row, .pcard, .orow, .stat, .stack > div' + (fine ? '' : ', .flip')).forEach(el => {
+  gsap.utils.toArray('.reveal-up, .row, .orow, .stat, .stack > div' + (fine ? '' : ', .flip')).forEach(el => {
     gsap.from(el, {
       y: fine ? 56 : 28, opacity: 0, duration: fine ? 1.1 : 0.8, ease: 'power3.out',
       scrollTrigger: { trigger: el, start: 'top 88%', once: true }
@@ -172,14 +244,12 @@
     scrollTrigger: { trigger: '.quote', start: 'top 72%', end: 'bottom 55%', scrub: true }
   });
 
-  /* ---------- projects: parallax + mouse tilt ---------- */
-  if (fine) $$('.pcard').forEach(card => {
-    const inner = $('.pin', card);
-    gsap.fromTo(inner, { yPercent: -5 }, {
-      yPercent: 5, ease: 'none',
-      scrollTrigger: { trigger: card, start: 'top bottom', end: 'bottom top', scrub: true }
-    });
-    const svg = $('svg', inner);
+  /* ---------- projects ---------- */
+  const work = $('#work'), cardsEl = $('.cards', work), pcards = $$('.pcard', work);
+
+  // mouse tilt on the illustration (desktop pointers only)
+  if (fine) pcards.forEach(card => {
+    const svg = $('.pin svg', card);
     const rx = gsap.quickTo(svg, 'rotationX', { duration: 0.6, ease: 'power3' });
     const ry = gsap.quickTo(svg, 'rotationY', { duration: 0.6, ease: 'power3' });
     gsap.set(svg, { transformPerspective: 1000 });
@@ -189,6 +259,46 @@
       rx(-((e.clientY - r.top) / r.height - 0.5) * 14);
     });
     card.addEventListener('pointerleave', () => { rx(0); ry(0); });
+  });
+
+  // big screens: the section pins and the cards travel sideways
+  mm.add('(min-width: 1000px) and (min-height: 640px)', () => {
+    work.classList.add('hscroll');
+    const dist = () => Math.max(0, cardsEl.scrollWidth - innerWidth);
+    const cur = $('.pcur', work), fill = $('.pbar i', work);
+    $('.ptot', work).textContent = String(pcards.length).padStart(2, '0');
+    const tween = gsap.to(cardsEl, {
+      x: () => -dist(), ease: 'none',
+      scrollTrigger: {
+        trigger: work, start: 'top top', end: () => '+=' + dist(),
+        pin: true, scrub: true, invalidateOnRefresh: true, anticipatePin: 1,
+        onUpdate: self => {
+          fill.style.transform = `scaleX(${self.progress})`;
+          cur.textContent = String(Math.round(self.progress * (pcards.length - 1)) + 1).padStart(2, '0');
+        }
+      }
+    });
+    // illustrations drift against the scroll direction, so the cards feel layered
+    pcards.forEach(card => {
+      gsap.fromTo($('.pin svg', card), { xPercent: -5 }, {
+        xPercent: 5, ease: 'none',
+        scrollTrigger: { trigger: card, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true }
+      });
+    });
+    return () => work.classList.remove('hscroll');
+  });
+  // everything else: ordinary vertical grid with reveal + parallax
+  mm.add('(max-width: 999px), (max-height: 639px)', () => {
+    pcards.forEach(card => {
+      gsap.from(card, {
+        y: fine ? 56 : 28, opacity: 0, duration: fine ? 1.1 : 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: card, start: 'top 88%', once: true }
+      });
+      if (fine) gsap.fromTo($('.pin', card), { yPercent: -5 }, {
+        yPercent: 5, ease: 'none',
+        scrollTrigger: { trigger: card, start: 'top bottom', end: 'bottom top', scrub: true }
+      });
+    });
   });
 
   /* ---------- community: 3D flip cards ---------- */
