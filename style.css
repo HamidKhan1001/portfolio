@@ -451,3 +451,19 @@ html.loading{overflow:hidden}
   .parrow{width:38px;height:38px;flex:none}
   .hero-meta{font-size:13px;gap:20px}
 }
+
+/* ---------- magic ---------- */
+.spell{font-family:var(--mono);font-size:clamp(12px,1.2vw,15px);text-align:center;color:var(--soft);min-height:1.6em;margin:0 0 clamp(18px,3vh,32px);letter-spacing:0;text-transform:none}
+.spell .pr{color:var(--accent)}
+.caret{display:inline-block;width:.55em;height:1.05em;background:var(--accent);vertical-align:-.18em;margin-left:3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.lantern{position:fixed;left:0;top:0;width:520px;height:520px;border-radius:50%;pointer-events:none;z-index:40;opacity:0;transition:opacity .6s;will-change:transform;
+  background:radial-gradient(circle,#ff5a1f26 0,#ff5a1f0d 38%,transparent 68%);mix-blend-mode:screen}
+:root[data-theme=light] .lantern{mix-blend-mode:multiply;background:radial-gradient(circle,#ff5a1f1f 0,#ff5a1f0a 38%,transparent 68%)}
+.lantern.on{opacity:1}
+.sparkles{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1500}
+.spell-toast{position:fixed;left:50%;bottom:36px;z-index:1600;transform:translate(-50%,20px);opacity:0;padding:12px 20px;border-radius:8px;background:var(--ink);color:var(--bg);font:500 13px var(--mono);letter-spacing:.02em;transition:opacity .4s,transform .6s var(--ease);pointer-events:none}
+.spell-toast.in{opacity:1;transform:translate(-50%,0)}
+html.arcane body{animation:arcane 2.4s ease-out}
+@keyframes arcane{0%,100%{filter:none}20%{filter:hue-rotate(-25deg) saturate(1.6) brightness(1.1)}}
+@media (hover:none){.spell{display:none}}

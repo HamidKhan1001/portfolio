@@ -21,6 +21,7 @@
       { g: 'Go to', t: 'Community', k: 'events cncf peshawar', run: go('#community') },
       { g: 'Go to', t: 'Contact', k: 'reach talk message', run: go('#contact') },
       { g: 'Do', t: 'Toggle light / dark theme', k: 'theme dark light mode', run: () => site().toggleTheme && site().toggleTheme() },
+      { g: 'Do', t: 'Cast a spell', k: 'magic wizard sparkle abracadabra', run: () => site().cast && site().cast() },
       { g: 'Do', t: 'Back to top', k: 'home scroll', run: go('#top') }
     ];
     if (site().flip) list.push({ g: 'Do', t: 'Flip the portrait', k: 'avatar photo card', run: () => { go('#top')(); setTimeout(() => site().flip(), 1300); } });
