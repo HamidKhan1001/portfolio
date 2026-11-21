@@ -99,18 +99,32 @@
     w.innerHTML = [...t].map(c => `<span class="lt" style="display:inline-block">${c}</span>`).join('');
   });
   let heroReady = false;
-  const intro = gsap.timeline({ defaults: { ease: 'power4.out' }, onComplete: () => (heroReady = true) });
+  const intro = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' }, onComplete: () => (heroReady = true) });
   intro
-    .from('.hero h1 .lt', { yPercent: 115, rotate: 6, duration: 1.3, stagger: 0.045, delay: 0.2 })
-    .from('.shape, .cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -60, duration: 1.4, stagger: 0.15, ease: 'elastic.out(1,.6)' }, 0.9)
-    .from('.copy, .since', { y: 30, opacity: 0, duration: 1, stagger: 0.1 }, 1.1)
-    .from('.nav', { y: -30, opacity: 0, duration: 1, clearProps: 'transform,opacity' }, 0.6);
+    .from('.hero h1 .lt', { yPercent: 118, rotate: 5, duration: 1.2, stagger: 0.04 })
+    .from('.cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -40, duration: 1.2, stagger: 0.12, ease: 'back.out(1.6)' }, 0.55)
+    .from('.hero-meta span', { y: 24, opacity: 0, duration: 1, stagger: 0.1 }, 0.7)
+    .from('.nav', { y: -30, opacity: 0, duration: 1, clearProps: 'transform,opacity' }, 0.4);
 
   const avatar = $('#avatar'), move = $('#avatarMove'), tilt = $('#avatarTilt');
   gsap.set(avatar, { rotateY: 180 });
+  gsap.set(move, { opacity: 0 });
   let introDone = false;
-  gsap.to(avatar, { rotateY: 0, duration: 1.8, delay: 1, ease: 'power3.inOut', onComplete: () => (introDone = true) });
-  gsap.from(move, { opacity: 0, duration: 0.8, delay: 0.6 });
+  // wait for the loader curtain (loader.js sets window.__loaded and fires "loaded")
+  const begin = () => {
+    intro.play();
+    gsap.to(move, { opacity: 1, duration: 0.8, delay: 0.3 });
+    gsap.to(avatar, { rotateY: 0, duration: 1.8, delay: 0.5, ease: 'power3.inOut', onComplete: () => (introDone = true) });
+  };
+  if (window.__loaded) begin(); else addEventListener('loaded', begin, { once: true });
+
+  // live local time in Peshawar
+  const clock = $('#clock');
+  if (clock) {
+    const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Karachi' });
+    const upd = () => { clock.textContent = fmt.format(new Date()) + ' PKT'; };
+    upd(); setInterval(upd, 15000);
+  }
 
   // click / tap to flip the portrait
   let flipped = false;
@@ -121,60 +135,6 @@
   };
   avatar.addEventListener('click', flipPortrait);
   window.site.flip = flipPortrait;
-
-  // draggable stickers
-  if (window.Draggable && fine) {
-    gsap.set('.bolt', { rotation: 8 });
-    Draggable.create('.shape', {
-      type: 'x,y', bounds: '.hb',
-      onPress() { gsap.to(this.target, { scale: 1.12, duration: 0.3 }); },
-      onRelease() { gsap.to(this.target, { scale: 1, duration: 0.8, ease: 'elastic.out(1,.5)' }); },
-      onDrag() { gsap.to(this.target, { rotation: '+=' + this.deltaX * 0.4, duration: 0.2, overwrite: 'auto' }); }
-    });
-  }
-
-  /* ---------- kinetic type: Archivo's width + weight axes swell toward the cursor ---------- */
-  const kinetic = (letters, o) => {
-    const n = letters.length, cur = new Array(n).fill(0), last = new Array(n).fill(-1), rects = new Array(n);
-    let px = 0, py = 0, on = false;
-    addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; on = true; }, { passive: true });
-    document.documentElement.addEventListener('pointerleave', () => (on = false));
-    gsap.ticker.add(() => {
-      if (!o.visible()) return;
-      const settled = cur.every(v => v < 0.002);
-      if (!on && settled) return;
-      const R = o.radius();
-      for (let i = 0; i < n; i++) rects[i] = letters[i].getBoundingClientRect(); // all reads, then all writes
-      for (let i = 0; i < n; i++) {
-        const r = rects[i], dx = r.left + r.width / 2 - px, dy = r.top + r.height / 2 - py;
-        const t = on ? Math.exp(-(dx * dx + dy * dy) / (R * R)) : 0;
-        cur[i] += (t - cur[i]) * 0.12;
-        const v = Math.round(cur[i] * 250) / 250;
-        if (v !== last[i]) {
-          last[i] = v;
-          letters[i].style.fontVariationSettings =
-            `"wdth" ${(o.w0 + (o.w1 - o.w0) * v).toFixed(1)}, "wght" ${Math.round(o.g0 + (o.g1 - o.g0) * v)}`;
-        }
-      }
-    });
-  };
-  if (fine) {
-    kinetic($$('.hero h1 .lt'), {
-      w0: 100, w1: 125, g0: 700, g1: 900,
-      radius: () => Math.max(170, innerWidth * 0.15),
-      visible: () => heroReady && scrollY < innerHeight * 1.3
-    });
-    const giant = $('.giant');
-    giant.innerHTML = [...giant.textContent].map(c =>
-      c === ' ' ? '<span style="display:inline-block;width:.3em"></span>' : `<span style="display:inline-block">${c}</span>`).join('');
-    let giantOn = false;
-    new IntersectionObserver(([e]) => (giantOn = e.isIntersecting), { rootMargin: '80px' }).observe(giant);
-    kinetic($$('span', giant).filter(s => s.textContent.trim()), {
-      w0: 90, w1: 112, g0: 800, g1: 900,
-      radius: () => Math.max(150, innerWidth * 0.11),
-      visible: () => giantOn
-    });
-  }
 
   /* ---------- marquee: drifts on its own, speeds up and reverses with scroll ---------- */
   const track = $('.mq-track');
@@ -244,62 +204,42 @@
     scrollTrigger: { trigger: '.quote', start: 'top 72%', end: 'bottom 55%', scrub: true }
   });
 
-  /* ---------- projects ---------- */
-  const work = $('#work'), cardsEl = $('.cards', work), pcards = $$('.pcard', work);
-
-  // mouse tilt on the illustration (desktop pointers only)
-  if (fine) pcards.forEach(card => {
-    const svg = $('.pin svg', card);
-    const rx = gsap.quickTo(svg, 'rotationX', { duration: 0.6, ease: 'power3' });
-    const ry = gsap.quickTo(svg, 'rotationY', { duration: 0.6, ease: 'power3' });
-    gsap.set(svg, { transformPerspective: 1000 });
-    card.addEventListener('pointermove', e => {
-      const r = card.getBoundingClientRect();
-      ry(((e.clientX - r.left) / r.width - 0.5) * 14);
-      rx(-((e.clientY - r.top) / r.height - 0.5) * 14);
+  /* ---------- projects: index list with a cursor-following preview ---------- */
+  const rows = $$('.prow'), prev = $('#pprev');
+  rows.forEach(row => gsap.from(row, {
+    y: 40, opacity: 0, duration: 1, ease: 'power3.out',
+    scrollTrigger: { trigger: row, start: 'top 92%', once: true }
+  }));
+  if (fine && prev) {
+    const tiles = rows.map(r => {
+      const t = $('.pimg', r).cloneNode(true);
+      prev.appendChild(t);
+      return t;
     });
-    card.addEventListener('pointerleave', () => { rx(0); ry(0); });
-  });
-
-  // big screens: the section pins and the cards travel sideways
-  mm.add('(min-width: 1000px) and (min-height: 640px)', () => {
-    work.classList.add('hscroll');
-    const dist = () => Math.max(0, cardsEl.scrollWidth - innerWidth);
-    const cur = $('.pcur', work), fill = $('.pbar i', work);
-    $('.ptot', work).textContent = String(pcards.length).padStart(2, '0');
-    const tween = gsap.to(cardsEl, {
-      x: () => -dist(), ease: 'none',
-      scrollTrigger: {
-        trigger: work, start: 'top top', end: () => '+=' + dist(),
-        pin: true, scrub: true, invalidateOnRefresh: true, anticipatePin: 1,
-        onUpdate: self => {
-          fill.style.transform = `scaleX(${self.progress})`;
-          cur.textContent = String(Math.round(self.progress * (pcards.length - 1)) + 1).padStart(2, '0');
-        }
-      }
+    const mx = gsap.quickTo(prev, 'x', { duration: 0.55, ease: 'power3' });
+    const my = gsap.quickTo(prev, 'y', { duration: 0.55, ease: 'power3' });
+    const rot = gsap.quickTo(prev, 'rotation', { duration: 0.6, ease: 'power3' });
+    let lastX = 0, active = -1;
+    const list = $('#plist');
+    list.addEventListener('pointerenter', e => {
+      gsap.set(prev, { x: e.clientX + 28, y: e.clientY - prev.offsetHeight / 2 });
+      gsap.to(prev, { opacity: 1, duration: 0.3 });
     });
-    // illustrations drift against the scroll direction, so the cards feel layered
-    pcards.forEach(card => {
-      gsap.fromTo($('.pin svg', card), { xPercent: -5 }, {
-        xPercent: 5, ease: 'none',
-        scrollTrigger: { trigger: card, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true }
-      });
+    list.addEventListener('pointermove', e => {
+      mx(e.clientX + 28); my(e.clientY - prev.offsetHeight / 2);
+      rot(Math.max(-8, Math.min(8, (e.clientX - lastX) * 0.4))); lastX = e.clientX;
     });
-    return () => work.classList.remove('hscroll');
-  });
-  // everything else: ordinary vertical grid with reveal + parallax
-  mm.add('(max-width: 999px), (max-height: 639px)', () => {
-    pcards.forEach(card => {
-      gsap.from(card, {
-        y: fine ? 56 : 28, opacity: 0, duration: fine ? 1.1 : 0.8, ease: 'power3.out',
-        scrollTrigger: { trigger: card, start: 'top 88%', once: true }
-      });
-      if (fine) gsap.fromTo($('.pin', card), { yPercent: -5 }, {
-        yPercent: 5, ease: 'none',
-        scrollTrigger: { trigger: card, start: 'top bottom', end: 'bottom top', scrub: true }
-      });
+    list.addEventListener('pointerleave', () => {
+      gsap.to(prev, { opacity: 0, duration: 0.3 });
+      tiles.forEach(t => t.classList.toggle('on', false));
+      active = -1;
     });
-  });
+    rows.forEach((row, i) => row.addEventListener('pointerenter', () => {
+      if (active === i) return;
+      tiles.forEach((t, k) => t.classList.toggle('on', k === i));
+      active = i;
+    }));
+  }
 
   /* ---------- community: 3D flip cards ---------- */
   const flips = $$('.flip');
