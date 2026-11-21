@@ -36,36 +36,16 @@
     setTimeout(() => root.classList.remove('theming'), 600);
   });
 
-  /* ---------- scroll lock, menu, anchors (shared with palette.js via window.site) ---------- */
+  /* ---------- mobile menu ---------- */
   const burger = $('#burger'), menu = $('#menu');
   let lenis = null;
-  const lock = on => {
-    if (lenis) on ? lenis.stop() : lenis.start();
-    else document.body.style.overflow = on ? 'hidden' : '';
-  };
   const setMenu = open => {
     burger.setAttribute('aria-expanded', open);
     menu.classList.toggle('open', open);
-    lock(open);
+    if (lenis) open ? lenis.stop() : lenis.start();
+    else document.body.style.overflow = open ? 'hidden' : '';
   };
   burger.addEventListener('click', () => setMenu(burger.getAttribute('aria-expanded') !== 'true'));
-
-  const goTo = id => {
-    let target = id === '#top' ? 0 : $(id);
-    if (target === null) return;
-    // a pinned section lives inside a spacer; scroll to the spacer or the offset is wrong once pinned
-    if (target && target.parentElement && target.parentElement.classList.contains('pin-spacer')) target = target.parentElement;
-    setMenu(false);
-    if (lenis) lenis.scrollTo(target, { offset: target === 0 ? 0 : -10, duration: 1.4 });
-    else (target === 0 ? window.scrollTo({ top: 0 }) : target.scrollIntoView());
-  };
-  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
-    const id = a.getAttribute('href');
-    if (id !== '#top' && !$(id)) return;
-    e.preventDefault();
-    goTo(id);
-  }));
-  window.site = { goTo, lock, toggleTheme: () => tbtn.click(), flip: null };
 
   if (!window.gsap || !window.ScrollTrigger) return; // page stays fully usable without motion
 
@@ -81,14 +61,25 @@
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
   }
+  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    const target = id === '#top' ? 0 : $(id);
+    if (target === null) return;
+    e.preventDefault();
+    setMenu(false);
+    if (lenis) lenis.scrollTo(target, { offset: id === '#top' ? 0 : -10, duration: 1.4 });
+    else (target === 0 ? window.scrollTo({ top: 0 }) : target.scrollIntoView());
+  }));
 
-  /* ---------- scroll progress ---------- */
-  const bar = $('.progress');
+  /* ---------- scroll progress + nav hide/show ---------- */
+  const bar = $('.progress'), nav = $('#nav');
   ScrollTrigger.create({
     start: 0, end: 'max',
-    onUpdate: self => { bar.style.transform = `scaleX(${self.progress})`; }
+    onUpdate: self => {
+      bar.style.transform = `scaleX(${self.progress})`;
+      const y = self.scroll();
+    }
   });
-  document.fonts && document.fonts.ready.then(() => ScrollTrigger.refresh());
 
   if (reduce) return;
 
@@ -98,58 +89,35 @@
     w.setAttribute('aria-hidden', 'true');
     w.innerHTML = [...t].map(c => `<span class="lt" style="display:inline-block">${c}</span>`).join('');
   });
-  let heroReady = false;
-  const intro = gsap.timeline({ paused: true, defaults: { ease: 'power4.out' }, onComplete: () => (heroReady = true) });
+  const intro = gsap.timeline({ defaults: { ease: 'power4.out' } });
   intro
-    .from('.hero h1 .lt', { yPercent: 118, rotate: 5, duration: 1.2, stagger: 0.04 })
-    .from('.cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -40, duration: 1.2, stagger: 0.12, ease: 'back.out(1.6)' }, 0.55)
-    .from('.hero-meta span', { y: 24, opacity: 0, duration: 1, stagger: 0.1 }, 0.7)
-    .from('.nav', { y: -30, opacity: 0, duration: 1, clearProps: 'transform,opacity' }, 0.4);
+    .from('.hero h1 .lt', { yPercent: 115, rotate: 6, duration: 1.3, stagger: 0.045, delay: 0.2 })
+    .from('.shape, .cx-sticker, .cx-pill', { scale: 0, opacity: 0, rotate: -60, duration: 1.4, stagger: 0.15, ease: 'elastic.out(1,.6)' }, 0.9)
+    .from('.copy, .since', { y: 30, opacity: 0, duration: 1, stagger: 0.1 }, 1.1)
+    .from('.nav', { y: -30, opacity: 0, duration: 1, clearProps: 'transform,opacity' }, 0.6);
 
   const avatar = $('#avatar'), move = $('#avatarMove'), tilt = $('#avatarTilt');
   gsap.set(avatar, { rotateY: 180 });
-  gsap.set(move, { opacity: 0 });
   let introDone = false;
-  // wait for the loader curtain (loader.js sets window.__loaded and fires "loaded")
-  const begin = () => {
-    intro.play();
-    gsap.to(move, { opacity: 1, duration: 0.8, delay: 0.3 });
-    gsap.to(avatar, { rotateY: 0, duration: 1.8, delay: 0.5, ease: 'power3.inOut', onComplete: () => (introDone = true) });
-  };
-  if (window.__loaded) begin(); else addEventListener('loaded', begin, { once: true });
-
-  // live local time in Peshawar
-  const clock = $('#clock');
-  if (clock) {
-    const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Karachi' });
-    const upd = () => { clock.textContent = fmt.format(new Date()) + ' PKT'; };
-    upd(); setInterval(upd, 15000);
-  }
+  gsap.to(avatar, { rotateY: 0, duration: 1.8, delay: 1, ease: 'power3.inOut', onComplete: () => (introDone = true) });
+  gsap.from(move, { opacity: 0, duration: 0.8, delay: 0.6 });
 
   // click / tap to flip the portrait
   let flipped = false;
-  const flipPortrait = () => {
+  avatar.addEventListener('click', () => {
     if (!introDone) return;
     flipped = !flipped;
     gsap.to(avatar, { rotateY: flipped ? 180 : 0, duration: 1.1, ease: 'power3.inOut' });
-  };
-  avatar.addEventListener('click', flipPortrait);
-  window.site.flip = flipPortrait;
+  });
 
-  /* ---------- marquee: drifts on its own, speeds up and reverses with scroll ---------- */
-  const track = $('.mq-track');
-  if (track) {
-    track.style.animation = 'none';
-    let x = 0, dir = -1, boost = 0;
-    gsap.ticker.add((_t, dt) => {
-      const v = lenis ? lenis.velocity : 0;
-      boost += (Math.min(Math.abs(v), 40) - boost) * 0.08;
-      if (Math.abs(v) > 0.4) dir += ((v < 0 ? 1 : -1) - dir) * 0.1;
-      else dir += (-1 - dir) * 0.02;
-      x += dir * (1.47 + boost * 0.35) * (dt / 1000);
-      if (x <= -50) x += 50;
-      if (x > 0) x -= 50;
-      track.style.transform = `translate3d(${x.toFixed(3)}%,0,0)`;
+  // draggable stickers
+  if (window.Draggable && fine) {
+    gsap.set('.bolt', { rotation: 8 });
+    Draggable.create('.shape', {
+      type: 'x,y', bounds: '.hb',
+      onPress() { gsap.to(this.target, { scale: 1.12, duration: 0.3 }); },
+      onRelease() { gsap.to(this.target, { scale: 1, duration: 0.8, ease: 'elastic.out(1,.5)' }); },
+      onDrag() { gsap.to(this.target, { rotation: '+=' + this.deltaX * 0.4, duration: 0.2, overwrite: 'auto' }); }
     });
   }
 
@@ -178,7 +146,7 @@
   });
 
   /* ---------- generic reveals ---------- */
-  gsap.utils.toArray('.reveal-up, .row, .orow, .stat, .stack > div' + (fine ? '' : ', .flip')).forEach(el => {
+  gsap.utils.toArray('.reveal-up, .row, .pcard, .orow, .stat, .stack > div' + (fine ? '' : ', .flip')).forEach(el => {
     gsap.from(el, {
       y: fine ? 56 : 28, opacity: 0, duration: fine ? 1.1 : 0.8, ease: 'power3.out',
       scrollTrigger: { trigger: el, start: 'top 88%', once: true }
@@ -204,42 +172,24 @@
     scrollTrigger: { trigger: '.quote', start: 'top 72%', end: 'bottom 55%', scrub: true }
   });
 
-  /* ---------- projects: index list with a cursor-following preview ---------- */
-  const rows = $$('.prow'), prev = $('#pprev');
-  rows.forEach(row => gsap.from(row, {
-    y: 40, opacity: 0, duration: 1, ease: 'power3.out',
-    scrollTrigger: { trigger: row, start: 'top 92%', once: true }
-  }));
-  if (fine && prev) {
-    const tiles = rows.map(r => {
-      const t = $('.pimg', r).cloneNode(true);
-      prev.appendChild(t);
-      return t;
+  /* ---------- projects: parallax + mouse tilt ---------- */
+  if (fine) $$('.pcard').forEach(card => {
+    const inner = $('.pin', card);
+    gsap.fromTo(inner, { yPercent: -5 }, {
+      yPercent: 5, ease: 'none',
+      scrollTrigger: { trigger: card, start: 'top bottom', end: 'bottom top', scrub: true }
     });
-    const mx = gsap.quickTo(prev, 'x', { duration: 0.55, ease: 'power3' });
-    const my = gsap.quickTo(prev, 'y', { duration: 0.55, ease: 'power3' });
-    const rot = gsap.quickTo(prev, 'rotation', { duration: 0.6, ease: 'power3' });
-    let lastX = 0, active = -1;
-    const list = $('#plist');
-    list.addEventListener('pointerenter', e => {
-      gsap.set(prev, { x: e.clientX + 28, y: e.clientY - prev.offsetHeight / 2 });
-      gsap.to(prev, { opacity: 1, duration: 0.3 });
+    const svg = $('svg', inner);
+    const rx = gsap.quickTo(svg, 'rotationX', { duration: 0.6, ease: 'power3' });
+    const ry = gsap.quickTo(svg, 'rotationY', { duration: 0.6, ease: 'power3' });
+    gsap.set(svg, { transformPerspective: 1000 });
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      ry(((e.clientX - r.left) / r.width - 0.5) * 14);
+      rx(-((e.clientY - r.top) / r.height - 0.5) * 14);
     });
-    list.addEventListener('pointermove', e => {
-      mx(e.clientX + 28); my(e.clientY - prev.offsetHeight / 2);
-      rot(Math.max(-8, Math.min(8, (e.clientX - lastX) * 0.4))); lastX = e.clientX;
-    });
-    list.addEventListener('pointerleave', () => {
-      gsap.to(prev, { opacity: 0, duration: 0.3 });
-      tiles.forEach(t => t.classList.toggle('on', false));
-      active = -1;
-    });
-    rows.forEach((row, i) => row.addEventListener('pointerenter', () => {
-      if (active === i) return;
-      tiles.forEach((t, k) => t.classList.toggle('on', k === i));
-      active = i;
-    }));
-  }
+    card.addEventListener('pointerleave', () => { rx(0); ry(0); });
+  });
 
   /* ---------- community: 3D flip cards ---------- */
   const flips = $$('.flip');
