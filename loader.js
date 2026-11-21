@@ -21,10 +21,10 @@
   const log = document.getElementById('ldLog');
   const steps = [
     [0.02, 'booting hamid.dev'],
-    [0.28, 'resolving kubernetes, go, python'],
-    [0.52, 'spawning goroutines'],
-    [0.76, 'warming caches'],
-    [0.94, 'negotiating the rest']
+    [0.26, 'summoning goroutines'],
+    [0.5, 'bribing the garbage collector'],
+    [0.74, 'feeding the load balancer'],
+    [0.94, 'negotiating with the dragon']
   ];
   let shown = 0, ready = false, start = performance.now(), finished = false;
   const MIN = 2300;
@@ -51,17 +51,18 @@
 
   const tick = now => {
     const t = Math.min(1, (now - start) / MIN);
-    const p = Math.min(ease(t), ready ? 1 : 0.92);
+    const p = t >= 1 && ready ? 1 : Math.min(ease(t), 0.99, ready ? 1 : 0.92);
     num.textContent = String(Math.round(p * 100)).padStart(3, '0');
     bar.style.transform = 'scaleX(' + p + ')';
     while (shown < steps.length && p >= steps[shown][0]) addLine(steps[shown++][1]);
-    if (p >= 1) setTimeout(finish, 180);
-    else requestAnimationFrame(tick);
+    if (p >= 1) { clearInterval(timer); setTimeout(finish, 180); }
   };
 
   const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
   const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise(r => addEventListener('load', r));
   Promise.all([fontsReady, loaded]).then(() => (ready = true));
   setTimeout(() => (ready = true), 5000); // never trap the visitor behind a slow CDN
-  requestAnimationFrame(tick);
+  // setInterval rather than rAF: keeps running in background tabs and can't stall
+  const timer = setInterval(() => tick(performance.now()), 33);
+  setTimeout(finish, 8000); // absolute failsafe
 })();

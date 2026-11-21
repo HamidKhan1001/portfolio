@@ -39,6 +39,34 @@
     }
   }
 
+  /* ---------- grimoire: rotating magical one-liners ---------- */
+  const SPELLS = [
+    ['Any sufficiently advanced backend is indistinguishable from magic.', 'Clarke, but make it Go'],
+    ['It works on my machine. That is not a bug, that is a spell with local scope.', 'Ancient developer proverb'],
+    ['I do not fix bugs. I banish them.', 'Exorcist, pull request #42'],
+    ['Kubernetes is just herding invisible cats with scrolls of YAML.', 'The Cluster Whisperer'],
+    ['Latency is a curse. Caching is the counter-spell.', 'Redis, the grey wizard'],
+    ['A race condition is two wizards casting at once and the universe picking a favourite.', 'Concurrency, volume II'],
+    ['git blame: the only divination I trust.', 'Seer of the main branch'],
+    ['Off-by-one: the oldest curse in the grimoire.', 'Every array, ever'],
+    ['Have you tried turning the dragon off and on again?', 'Tier-1 sorcery support'],
+    ['Rate limiter: the bouncer that tells a stampede to take a number.', 'Token Bucket, bouncer']
+  ];
+  const gq = $('#gq'), gby = $('#gby'), gnext = $('#gnext');
+  let gi = 0, gtimer = 0;
+  const showSpell = i => {
+    gi = (i + SPELLS.length) % SPELLS.length;
+    if (reduce) { gq.textContent = SPELLS[gi][0]; gby.textContent = SPELLS[gi][1]; return; }
+    scramble(gq, SPELLS[gi][0], 900);
+    scramble(gby, SPELLS[gi][1], 600);
+  };
+  if (gq) {
+    gq.textContent = SPELLS[0][0]; gby.textContent = SPELLS[0][1];
+    const auto = () => { clearInterval(gtimer); if (!reduce) gtimer = setInterval(() => showSpell(gi + 1), 7000); };
+    gnext.addEventListener('click', () => { showSpell(gi + 1); auto(); });
+    auto();
+  }
+
   if (reduce) return;
 
   /* ---------- glyph scramble ("decrypt") ---------- */
